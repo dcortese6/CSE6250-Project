@@ -3,6 +3,7 @@ import yaml
 import argparse
 import collections, pickle
 import pandas as pd
+import numpy as np
 from nltk.corpus import stopwords
 
 global args
@@ -79,19 +80,19 @@ class DatasetProvider:
         texts = file_name['TEXT'].values
         for txt in texts:
             file_ngram_list = self.extract_tokens(txt)
-            if file_ngram_list != None:
-                token_counts.update(file_ngram_list)
+            if file_ngram_list == None:
+                continue
+            token_counts.update(file_ngram_list)
         
         index = 1
         self.token2int['oov_word'] = 0
         outfile = open(ALPHABET_FILE, 'w')
         stop_words = stopwords.words('english')
         for token, count in token_counts.most_common():
-            outfile.write('%s|%s\n' % (token, count))
             if count > self.min_token_freq and token not in stop_words:
+                outfile.write('%s|%s\n' % (token, count))
                 self.token2int[token] = index
                 index += 1
-                
         pickle_file = open(ALPHABET_PICKLE, 'wb')
         pickle.dump(self.token2int, pickle_file)
     
@@ -123,6 +124,8 @@ class DatasetProvider:
             if count > self.min_examples_per_code:
                 self.code2int[code] = index
                 index += 1
+        
+        print(len(self.code2int))
             
     def load(self,
             maxlen=float('inf'),
@@ -131,7 +134,8 @@ class DatasetProvider:
         codes = []
         examples = []
         
-        notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
+        notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE),
+                            usecols=['SUBJECT_ID', 'TEXT'])
         
         for subj_id, txt in zip(notes.SUBJECT_ID, notes.TEXT):
         # for txt in texts:
@@ -183,7 +187,11 @@ if __name__ == "__main__":
         configs['args']['max_tokens_in_file'],
         configs['args']['min_examples_per_code']
     )
-    x, y = dataset.load()   
+    x, y = dataset.load()
+    
+    print("padding dataset...")
+    maxlen = len(max(x, key=len))
+    x = np.array([i + [0]*(maxlen-len(i)) for i in x])
     
     pickle_x = open(MODEL_DATA_X, 'wb')
     pickle.dump(x, pickle_x)   

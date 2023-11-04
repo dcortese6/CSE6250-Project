@@ -14,16 +14,18 @@ args:
 
 dan:
   batch: 50
-  epochs: 75
+  epochs: 1
   embdims: 300
   hidden: 1000
   learnrt: 0.001
+  workers: 0
+  cuda: True
 
-cnn:
-  batch: 50
-  epochs: 25
-  embdims: 300
-  filters: 200
-  filtlen: 2
-  hidden: 1000
-  learnrt: 0.001
+# cnn:
+#   batch: 50
+#   epochs: 25
+#   embdims: 300
+#   filters: 200
+#   filtlen: 2
+#   hidden: 1000
+#   learnrt: 0.001

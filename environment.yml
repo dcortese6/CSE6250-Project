@@ -9,6 +9,8 @@ dependencies:
   - pyyaml
   - pandas
   - nltk
+  - scikit-learn
+  - pytorch
   # - matplotlib=3.7.1
   # - mir_eval=0.6
   # - ffmpeg<4.4
