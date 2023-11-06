@@ -4,7 +4,7 @@ import torch.nn as nn
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.fc = nn.Linear(1428, 174)
+        self.fc = nn.Linear(2042, 174)
         
     def forward(self, x):
         x = torch.sigmoid(self.fc(x))

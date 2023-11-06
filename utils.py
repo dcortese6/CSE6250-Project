@@ -59,7 +59,7 @@ def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10
     data_time = AverageMeter()
     losses = AverageMeter()
     # accuracy = AverageMeter()
-    macro_f1 = AverageMeter()
+    # macro_f1 = AverageMeter()
 
     model.train()
 
@@ -90,8 +90,13 @@ def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10
         # accuracy.update(compute_batch_accuracy(output, target).item(), target.size(0))
         # metrics = compute_batch_accuracy(output, target)
         metrics = compute_batch_accuracy(output, target)
-        macro_f1_score = metrics['micro/f1']
-        macro_f1.update(macro_f1_score, target.size(0))
+        output_mets = {}
+        for m in metrics:
+            met = AverageMeter()
+            # key = 'macro/f1'
+            # macro_f1_score = metrics[m]
+            met.update(metrics[m], target.size(0))
+            output_mets[m] = met
 
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
@@ -103,10 +108,10 @@ def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10
                     .format(
                         epoch, i, len(data_loader), batch_time=batch_time,
                         data_time=data_time, loss=losses, #acc=accuracy
-                        macro_f1=macro_f1
+                        macro_f1=output_mets['macro/f1']
                         ))
 
-    return losses.avg, macro_f1.avg
+    return losses.avg, {k:v.avg for k, v in output_mets.items()}
 
 
 def evaluate(model, device, data_loader, criterion, print_freq=10):
@@ -115,7 +120,7 @@ def evaluate(model, device, data_loader, criterion, print_freq=10):
 	# accuracy = AverageMeter()
     macro_f1 = AverageMeter()
 
-    results = []
+    # results = []
 
     model.eval()
 
@@ -139,13 +144,21 @@ def evaluate(model, device, data_loader, criterion, print_freq=10):
             losses.update(loss.item(), target.size(0))
             # accuracy.update(compute_batch_accuracy(output, target).item(), target.size(0))
             metrics = compute_batch_accuracy(output, target)
-            macro_f1_score = metrics['macro/f1']
-            macro_f1.update(macro_f1_score, target.size(0))
+            # key = 'macro/f1'
+            # macro_f1_score = metrics[key]
+            # macro_f1.update(macro_f1_score, target.size(0))
+            output_mets = {}
+            for m in metrics:
+                met = AverageMeter()
+                # key = 'macro/f1'
+                # macro_f1_score = metrics[m]
+                met.update(metrics[m], target.size(0))
+                output_mets[m] = met
             
             
-            y_true = target.detach().to('cpu').numpy().tolist()
-            y_pred = output.detach().to('cpu').max(1)[1].numpy().tolist()
-            results.extend(list(zip(y_true, y_pred)))
+            # y_true = target.detach().to('cpu').numpy().tolist()
+            # y_pred = output.detach().to('cpu').max(1)[1].numpy().tolist()
+            # results.extend(list(zip(y_true, y_pred)))
 
             if i % print_freq == 0:
                 print('Test: [{0}/{1}]\t'
@@ -157,8 +170,8 @@ def evaluate(model, device, data_loader, criterion, print_freq=10):
                     .format(
                         i, len(data_loader), batch_time=batch_time,
                         loss=losses, #acc=accuracy
-                        macro_f1=macro_f1
+                        macro_f1=output_mets['macro/f1']
                         ))
                     
                     
-    return losses.avg, macro_f1.avg, results
+    return losses.avg, {k:v.avg for k, v in output_mets.items()}#macro_f1.avg#, results
