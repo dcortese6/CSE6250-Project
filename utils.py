@@ -38,11 +38,11 @@ class AverageMeter(object):
 
 #         return correct * 100.0 / batch_size
 
-def compute_batch_accuracy(output, target, threshold=0.5):
+def compute_batch_accuracy(output, target, score_metric, threshold=0.5):
 
     with torch.no_grad():
         pred = np.array(output > threshold, dtype=float)
-        return {'micro/precision': precision_score(y_true=target, y_pred=pred, average='micro', zero_division=np.nan),
+        mets = {'micro/precision': precision_score(y_true=target, y_pred=pred, average='micro', zero_division=np.nan),
                 'micro/recall': recall_score(y_true=target, y_pred=pred, average='micro', zero_division=np.nan),
                 'micro/f1': f1_score(y_true=target, y_pred=pred, average='micro', zero_division=np.nan),
                 'macro/precision': precision_score(y_true=target, y_pred=pred, average='macro', zero_division=np.nan),
@@ -52,13 +52,14 @@ def compute_batch_accuracy(output, target, threshold=0.5):
                 'samples/recall': recall_score(y_true=target, y_pred=pred, average='samples', zero_division=np.nan),
                 'samples/f1': f1_score(y_true=target, y_pred=pred, average='samples', zero_division=np.nan),
                 }
+        return mets[score_metric]
 
 
-def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10):
+def train(model, device, data_loader, criterion, optimizer, epoch, score_metric, print_freq=10):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    # accuracy = AverageMeter()
+    score = AverageMeter()
     # macro_f1 = AverageMeter()
 
     model.train()
@@ -76,6 +77,8 @@ def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10
 
         optimizer.zero_grad()
         output = model(input)
+        # print(torch.round(output))
+        # print(target)
         loss = criterion(output, target)
         assert not np.isnan(loss.item()), 'Model diverged with loss = NaN'
 
@@ -87,38 +90,34 @@ def train(model, device, data_loader, criterion, optimizer, epoch, print_freq=10
         end = time.time()
 
         losses.update(loss.item(), target.size(0))
-        # accuracy.update(compute_batch_accuracy(output, target).item(), target.size(0))
+        score.update(compute_batch_accuracy(output, target, score_metric).item(), target.size(0))
         # metrics = compute_batch_accuracy(output, target)
-        metrics = compute_batch_accuracy(output, target)
-        output_mets = {}
-        for m in metrics:
-            met = AverageMeter()
-            # key = 'macro/f1'
-            # macro_f1_score = metrics[m]
-            met.update(metrics[m], target.size(0))
-            output_mets[m] = met
+        # metrics = compute_batch_accuracy(output, target)
+        # output_mets = {}
+        # for m in metrics:
+        #     met = AverageMeter()
+        #     # key = 'macro/f1'
+        #     # macro_f1_score = metrics[m]
+        #     met.update(metrics[m], target.size(0))
+        #     output_mets[m] = met
 
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
-				'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-				'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
-				'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-				# 'Accuracy {acc.val:.3f} ({acc.avg:.3f})'
-                'Macro F1 {macro_f1.val:.3f} ({macro_f1.avg:.3f})'
-                    .format(
-                        epoch, i, len(data_loader), batch_time=batch_time,
-                        data_time=data_time, loss=losses, #acc=accuracy
-                        macro_f1=output_mets['macro/f1']
-                        ))
+                    'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
+                    'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
+                    'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                    'Score {score.val:.3f} ({score.avg:.3f})'.format(
+                epoch, i, len(data_loader), batch_time=batch_time,
+                data_time=data_time, loss=losses, score=score))
 
-    return losses.avg, {k:v.avg for k, v in output_mets.items()}
+    return losses.avg, score.avg
 
 
-def evaluate(model, device, data_loader, criterion, print_freq=10):
+def evaluate(model, device, data_loader, criterion, score_metric, print_freq=10):
     batch_time = AverageMeter()
     losses = AverageMeter()
 	# accuracy = AverageMeter()
-    macro_f1 = AverageMeter()
+    score = AverageMeter()
 
     # results = []
 
@@ -142,18 +141,18 @@ def evaluate(model, device, data_loader, criterion, print_freq=10):
             end = time.time()
 
             losses.update(loss.item(), target.size(0))
-            # accuracy.update(compute_batch_accuracy(output, target).item(), target.size(0))
-            metrics = compute_batch_accuracy(output, target)
+            score.update(compute_batch_accuracy(output, target, score_metric).item(), target.size(0))
+            # metrics = compute_batch_accuracy(output, target)
             # key = 'macro/f1'
             # macro_f1_score = metrics[key]
             # macro_f1.update(macro_f1_score, target.size(0))
-            output_mets = {}
-            for m in metrics:
-                met = AverageMeter()
-                # key = 'macro/f1'
-                # macro_f1_score = metrics[m]
-                met.update(metrics[m], target.size(0))
-                output_mets[m] = met
+            # output_mets = {}
+            # for m in metrics:
+            #     met = AverageMeter()
+            #     # key = 'macro/f1'
+            #     # macro_f1_score = metrics[m]
+            #     met.update(metrics[m], target.size(0))
+            #     output_mets[m] = met
             
             
             # y_true = target.detach().to('cpu').numpy().tolist()
@@ -164,14 +163,8 @@ def evaluate(model, device, data_loader, criterion, print_freq=10):
                 print('Test: [{0}/{1}]\t'
                     'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                     'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                    # 'Accuracy {acc.val:.3f} ({acc.avg:.3f})'.format(
-                    #     i, len(data_loader), batch_time=batch_time, loss=losses, acc=accuracy))
-                    'Macro F1 {macro_f1.val:.3f} ({macro_f1.avg:.3f})'
-                    .format(
-                        i, len(data_loader), batch_time=batch_time,
-                        loss=losses, #acc=accuracy
-                        macro_f1=output_mets['macro/f1']
-                        ))
+                    'Accuracy {score.val:.3f} ({score.avg:.3f})'.format(
+                        i, len(data_loader), batch_time=batch_time, loss=losses, score=score))
                     
                     
-    return losses.avg, {k:v.avg for k, v in output_mets.items()}#macro_f1.avg#, results
+    return losses.avg, score.avg#, results

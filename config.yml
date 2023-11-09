@@ -14,12 +14,13 @@ args:
 
 dan:
   batch: 50
-  epochs: 10
+  epochs: 1
   embdims: 300
   hidden: 1000
   learnrt: 0.001
   workers: 0
   cuda: True
+  score: macro/f1
 
 # cnn:
 #   batch: 50

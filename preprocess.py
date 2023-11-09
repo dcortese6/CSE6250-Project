@@ -1,7 +1,7 @@
 import os
 import yaml
 import argparse
-import collections, pickle
+import collections, pickle 
 import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
@@ -51,7 +51,7 @@ class DatasetProvider:
         if not os.path.isfile(ALPHABET_PICKLE):
             print('cannot find tokens file. reading notes to create it...')
             notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
-            notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
+            # notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
             print('getting tokens and counts and dumping them to file...')
             self.make_and_write_token_alphabet(notes)
         print('retrieving alphabet from file...')
@@ -81,7 +81,7 @@ class DatasetProvider:
         texts = file_name['TEXT'].values
         for txt in texts:
             file_ngram_list = self.extract_tokens(txt)
-            if file_ngram_list == None:
+            if file_ngram_list is None:
                 continue
             token_counts.update(file_ngram_list)
         
@@ -136,12 +136,12 @@ class DatasetProvider:
         
         notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE),
                             usecols=['SUBJECT_ID', 'TEXT'])
-        notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
+        # notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
         
         for subj_id, txt in zip(notes.SUBJECT_ID, notes.TEXT):
         # for txt in texts:
             file_ngram_list = self.extract_tokens(txt)
-            if file_ngram_list == None:
+            if file_ngram_list is None:
                 continue
             
             if len(self.subj2codes[subj_id]) == 0:

@@ -25,7 +25,7 @@ with open(args.config,'r') as f:
 
 with open('data/model/model_data_x.pkl', 'rb') as f:
     x = pickle.load(f)
-    
+print(np.max(x))
 with open('data/model/model_data_y.pkl', 'rb') as f:
     y = pickle.load(f)
     
@@ -43,7 +43,7 @@ if device.type == "cuda":
 	torch.backends.cudnn.deterministic = True
 	torch.backends.cudnn.benchmark = False
     
-tensor_x = torch.tensor(x, dtype=torch.float32)
+tensor_x = torch.tensor(x, dtype=torch.int32)
 tensor_y = torch.tensor(y, dtype=torch.float32)    
     
 train_x, test_x, train_y, test_y = train_test_split(tensor_x, tensor_y, test_size=configs['args']['test_size'])
@@ -73,12 +73,14 @@ train_losses, train_accuracies = [], []
 valid_losses, valid_accuracies = [], []
 
 writer = SummaryWriter()
+score_metric = configs['dan']['score']
 for epoch in range(NUM_EPOCHS):
-    train_loss, train_accuracy = train(model, device, train_loader, criterion, optimizer, epoch)
-    valid_loss, valid_accuracy = evaluate(model, device, test_loader, criterion)
-    for m in train_accuracy:
-        writer.add_scalars(m, {'train': train_accuracy[m],
-                                'validation': valid_accuracy[m]}, epoch)
+    train_loss, train_accuracy = train(model, device, train_loader, criterion, optimizer, epoch, score_metric)
+    valid_loss, valid_accuracy = evaluate(model, device, test_loader, criterion, score_metric)
+    # for m in train_accuracy:
+        # print(m)
+    writer.add_scalars(score_metric, {'train': train_accuracy,
+                                    'validation': valid_accuracy}, epoch)
     writer.flush()
     
     train_losses.append(train_loss)
@@ -87,9 +89,9 @@ for epoch in range(NUM_EPOCHS):
     train_accuracies.append(train_accuracy)
     valid_accuracies.append(valid_accuracy)
 
-    is_best = valid_accuracy['macro/f1'] > best_val_acc  # let's keep the model that has the best accuracy, but you can also use another metric.
+    is_best = valid_accuracy > best_val_acc  # let's keep the model that has the best accuracy, but you can also use another metric.
     if is_best:
-        best_val_acc = valid_accuracy['macro/f1']
+        best_val_acc = valid_accuracy
         torch.save(model, os.path.join(PATH_OUTPUT, save_file), _use_new_zipfile_serialization=False)
 
 writer.close()
