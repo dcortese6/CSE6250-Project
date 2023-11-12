@@ -47,4 +47,10 @@ This will take a few minutes to run. The prepared dataset will be saved as pickl
 
 ## Train Model
 
-**IN PROGRESS**
+Train a model by changing any desired parameters in config.yml and run:
+
+```python train.py```
+
+To view model progress, open another terminal start Tensorboard:
+
+```tensorboard --logdir runs```
