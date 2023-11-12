@@ -14,7 +14,7 @@ args:
 
 dan:
   batch: 50
-  epochs: 1
+  epochs: 10
   embdims: 300
   hidden: 1000
   learnrt: 0.001

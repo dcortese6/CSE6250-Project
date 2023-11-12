@@ -10,6 +10,7 @@ dependencies:
   - pandas
   - nltk
   - scikit-learn
+  - matplotlib
   - pip:
     - torch
     - packaging

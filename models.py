@@ -15,20 +15,16 @@ with open(args.config,'r') as f:
     f.close()
 
 class Model(nn.Module):
-    def __init__(self):
+    def __init__(self, embeddings):
         super(Model, self).__init__()
-        self.embed = nn.Embedding(num_embeddings=20904,
+        self.embed = nn.Embedding(num_embeddings=embeddings,
                                 embedding_dim=configs['dan']['embdims'],
                                 padding_idx=0)
-        # # self.avg = nn.AvgPool1d(1)
         self.hidden = nn.Linear(configs['dan']['embdims'], configs['dan']['hidden'])
         self.fc = nn.Linear(configs['dan']['hidden'], 174)
-        # self.sig = nn.Sigmoid()
-        # self.fc = nn.Linear(1428, 174)
         
     def forward(self, x):
         x = self.embed(x)
-        # # x = self.avg(x)
         x = x.mean(dim=1)
         x = self.hidden(x)
         x = torch.relu(x)

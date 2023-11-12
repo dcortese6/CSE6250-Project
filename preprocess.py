@@ -51,7 +51,7 @@ class DatasetProvider:
         if not os.path.isfile(ALPHABET_PICKLE):
             print('cannot find tokens file. reading notes to create it...')
             notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
-            # notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
+            notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
             print('getting tokens and counts and dumping them to file...')
             self.make_and_write_token_alphabet(notes)
         print('retrieving alphabet from file...')
@@ -136,7 +136,7 @@ class DatasetProvider:
         
         notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE),
                             usecols=['SUBJECT_ID', 'TEXT'])
-        # notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
+        notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
         
         for subj_id, txt in zip(notes.SUBJECT_ID, notes.TEXT):
         # for txt in texts:
@@ -174,12 +174,6 @@ class DatasetProvider:
         return examples, codes
             
 if __name__ == "__main__":
-
-#   cfg = ConfigParser.ConfigParser()
-#   cfg.read(sys.argv[1])
-    # base = os.environ['DATA_ROOT']
-    # train_dir = os.path.join(base, configs['data']['train'])
-    # code_file = os.path.join(base, configs['data']['codes'])
 
     dataset = DatasetProvider(
         configs['data']['notes'],
