@@ -23,12 +23,15 @@ args = parser.parse_args()
 with open(args.config,'r') as f:
     configs = yaml.safe_load(f)
     f.close()
+    
+big_query = configs['data']['bq']
 
-with open('data/model/model_data_x.pkl', 'rb') as f:
-    x = pickle.load(f)
+if not big_query:
+    with open('data/model/model_data_x.pkl', 'rb') as f:
+        x = pickle.load(f)
 
-with open('data/model/model_data_y.pkl', 'rb') as f:
-    y = pickle.load(f)
+    with open('data/model/model_data_y.pkl', 'rb') as f:
+        y = pickle.load(f)
     
 MODEL_OUTPUT = "./output/models/"
 PLOT_OUTPUT = "./output/plots/"
@@ -91,7 +94,7 @@ for epoch in range(NUM_EPOCHS):
     is_best = valid_accuracy > best_val_acc  # let's keep the model that has the best accuracy, but you can also use another metric.
     if is_best:
         best_val_acc = valid_accuracy
-        torch.save(model, os.path.join(MODEL_OUTPUT, str(model_name) + ".pth"), _use_new_zipfile_serialization=False)
+        torch.save(model.state_dict(), os.path.join(MODEL_OUTPUT, str(model_name) + ".pth"), _use_new_zipfile_serialization=False)
 
 writer.close()
 

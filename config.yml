@@ -5,6 +5,7 @@ data:
   codes: data/codes/
   model: data/model/
   embed: Word2VecModels/mimic-cuis.txt
+  bq: False
 
 args:
   min_token_freq: 100
@@ -30,3 +31,12 @@ dan:
 #   filtlen: 2
 #   hidden: 1000
 #   learnrt: 0.001
+
+eval:
+  # alphabet: /data/lookups/alphabet.pkl
+  judgement: intuitive
+  train_data: data/eval/train/records/
+  train_annot: data/eval/train/annotations/obesity_standoff_annotations_training*.xml
+  test_data: data/eval/test/records/
+  test_annot: data/eval/test/annotations/obesity_standoff_annotations_test_intuitive.xml
+  min_token_freq: 0

@@ -1,10 +1,12 @@
 import os
 import yaml
 import argparse
-import collections, pickle 
+import collections
+import pickle 
 import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
+import bigquery_extract as bq
 
 global args
 parser = argparse.ArgumentParser(description='Patient Representation')
@@ -33,6 +35,7 @@ class DatasetProvider:
             min_token_freq,
             max_tokens_in_file,
             min_examples_per_code,
+            use_bigquery,
             use_cuis=False):
         
         self.corpus_path = corpus_path
@@ -41,6 +44,7 @@ class DatasetProvider:
         self.max_tokens_in_file = max_tokens_in_file
         self.min_examples_per_code = min_examples_per_code
         self.use_cuis = use_cuis
+        self.use_bigquery = use_bigquery
         
         self.token2int = {}  # words indexed by frequency
         self.code2int = {}   # class to int mapping
@@ -48,9 +52,15 @@ class DatasetProvider:
         
     # def read_cuis(self, file_name)   
     #     infile = os.path.join(self.corpus_path, file_name)
+        if self.use_bigquery:
+            self.client = bq.connect()
+            
         if not os.path.isfile(ALPHABET_PICKLE):
             print('cannot find tokens file. reading notes to create it...')
-            notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
+            if self.use_bigquery:
+                notes = bq.get_notes(self.client)
+            else:
+                notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
             notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
             print('getting tokens and counts and dumping them to file...')
             self.make_and_write_token_alphabet(notes)
@@ -104,7 +114,15 @@ class DatasetProvider:
                             prefix,
                             num_digits):
         
-        frame = pd.read_csv(code_file, usecols=['SUBJECT_ID', code_col])
+        if self.use_bigquery:
+            if prefix == 'diag':
+                frame = bq.get_diagnoses(self.client)
+            if prefix == 'proc':
+                frame = bq.get_procedures(self.client)
+            if prefix == 'cpt':
+                frame = bq.get_cpt(self.client)
+        else:
+            frame = pd.read_csv(code_file, usecols=['SUBJECT_ID', code_col])
         for subj_id, code in zip(frame.SUBJECT_ID, frame[code_col]):
             if subj_id not in self.subj2codes:
                 self.subj2codes[subj_id] = set()
@@ -134,8 +152,13 @@ class DatasetProvider:
         codes = []
         examples = []
         
-        notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE),
-                            usecols=['SUBJECT_ID', 'TEXT'])
+        if self.use_bigquery:
+            notes = bq.get_notes(self.client)
+        else:
+            notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE), usecols=['SUBJECT_ID', 'TEXT'])
+        
+        # notes = pd.read_csv(os.path.join(self.corpus_path, NOTES_FILE),
+        #                     usecols=['SUBJECT_ID', 'TEXT'])
         notes = notes.groupby(['SUBJECT_ID'])['TEXT'].apply(lambda x: ' '.join(x)).reset_index()
         
         for subj_id, txt in zip(notes.SUBJECT_ID, notes.TEXT):
@@ -175,12 +198,15 @@ class DatasetProvider:
             
 if __name__ == "__main__":
 
+    big_query = configs['data']['bq']
+
     dataset = DatasetProvider(
         configs['data']['notes'],
         configs['data']['codes'],
         configs['args']['min_token_freq'],
         configs['args']['max_tokens_in_file'],
-        configs['args']['min_examples_per_code']
+        configs['args']['min_examples_per_code'],
+        big_query
     )
     x, y = dataset.load()
     
@@ -188,7 +214,8 @@ if __name__ == "__main__":
     maxlen = len(max(x, key=len))
     x = np.array([i + [0]*(maxlen-len(i)) for i in x])
     
-    pickle_x = open(MODEL_DATA_X, 'wb')
-    pickle.dump(x, pickle_x)   
-    pickle_y = open(MODEL_DATA_Y, 'wb')
-    pickle.dump(y, pickle_y)   
+    if not big_query:
+        pickle_x = open(MODEL_DATA_X, 'wb')
+        pickle.dump(x, pickle_x)   
+        pickle_y = open(MODEL_DATA_Y, 'wb')
+        pickle.dump(y, pickle_y)   
