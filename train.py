@@ -12,7 +12,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
 from utils import train, evaluate
-from models import Model
+from models import Model, BiGRU
 
 global args
 parser = argparse.ArgumentParser(description='Patient Representation')
@@ -62,6 +62,7 @@ test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num
 
 max_token = np.max(x)
 model = Model(embeddings=max_token+1)
+# model = BiGRU(embeddings=max_token+1)
 model_name = 'BaseModel'
 
 criterion = nn.BCELoss()
