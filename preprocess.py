@@ -6,7 +6,7 @@ import pickle
 import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
-import bigquery_extract as bq
+import word2vec
 
 global args
 parser = argparse.ArgumentParser(description='Patient Representation')
@@ -53,6 +53,7 @@ class DatasetProvider:
     # def read_cuis(self, file_name)   
     #     infile = os.path.join(self.corpus_path, file_name)
         if self.use_bigquery:
+            import bigquery_extract as bq
             self.client = bq.connect()
             
         if not os.path.isfile(ALPHABET_PICKLE):
@@ -151,6 +152,7 @@ class DatasetProvider:
         
         codes = []
         examples = []
+        word_vecs = []
         
         if self.use_bigquery:
             notes = bq.get_notes(self.client)
@@ -166,6 +168,7 @@ class DatasetProvider:
             file_ngram_list = self.extract_tokens(txt)
             if file_ngram_list is None:
                 continue
+            word_vecs.append(file_ngram_list)
             
             if len(self.subj2codes[subj_id]) == 0:
                 print('skipping text for subject', subj_id)
@@ -194,11 +197,25 @@ class DatasetProvider:
                 
             examples.append(example)
         
+            # init_vectors = None
+        if configs['data']['w2v']:
+            print('extracting word2vec embeddings....')
+            # embed_file = os.path.join(base, cfg.get('data', 'embed'))
+            embed_dir = './output/embeddings/word2vec.wordvectors'
+            w2v = word2vec.Model()
+            embeddings = w2v.get_embeddings(word_vecs, vector_size=configs['dan']['embdims'])
+            if not os.path.exists(embed_dir):
+                word_vectors = embeddings.wv
+                word_vectors.save(embed_dir)
+        
         return examples, codes
             
 if __name__ == "__main__":
 
     big_query = configs['data']['bq']
+    # use_w2v = configs['data']['w2v']
+    # embed_dim = configs['dan']['embdims']
+    # embed_dir = './output/embeddings/word2vec.wordvectors'
 
     dataset = DatasetProvider(
         configs['data']['notes'],
@@ -209,6 +226,17 @@ if __name__ == "__main__":
         big_query
     )
     x, y = dataset.load()
+    
+    # init_vectors = None
+    # if use_w2v:
+    #     print('extracting word2vec embeddings....')
+    #     # embed_file = os.path.join(base, cfg.get('data', 'embed'))
+    #     w2v = word2vec.Model()
+    #     embeddings = w2v.get_embeddings(x, vector_size=embed_dim)
+    #     if not os.path.exists(embed_dir):
+    #         word_vectors = embeddings.wv
+    #         word_vectors.save(embed_dir)
+        # init_vectors = [w2v.select_vectors(dataset.token2int)]
     
     print("padding dataset...")
     maxlen = len(max(x, key=len))

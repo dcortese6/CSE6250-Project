@@ -4,7 +4,8 @@ data:
   # codes: MimicIII/Source/
   codes: data/codes/
   model: data/model/
-  embed: Word2VecModels/mimic-cuis.txt
+  # embed: Word2VecModels/mimic-cuis.txt
+  w2v: False
   bq: False
 
 args:
@@ -15,7 +16,7 @@ args:
 
 dan:
   batch: 50
-  epochs: 10
+  epochs: 30
   embdims: 300
   hidden: 1000
   learnrt: 0.001
