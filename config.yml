@@ -36,8 +36,11 @@ dan:
 eval:
   # alphabet: /data/lookups/alphabet.pkl
   judgement: intuitive
-  train_data: data/eval/train/records/
-  train_annot: data/eval/train/annotations/obesity_standoff_annotations_training*.xml
-  test_data: data/eval/test/records/
-  test_annot: data/eval/test/annotations/obesity_standoff_annotations_test_intuitive.xml
+  train_data: i2b2/extracted_text/Train1+2/
+  train_annot: i2b2/Xml/obesity_standoff_annotations_training*.xml
+  test_data: i2b2/extracted_text/Test/
+  test_annot: i2b2/Xml/obesity_standoff_annotations_test.xml
+  alphabet_pickle: i2b2/Model/alphabet.pkl
+  alphabet_pickle_learned_model: data/lookups/alphabet.pkl
+  model_file: output/model/BaseModel.pth
   min_token_freq: 0
